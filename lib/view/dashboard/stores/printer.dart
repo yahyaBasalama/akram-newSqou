@@ -1,6 +1,5 @@
 // @dart=2.9
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -10,25 +9,23 @@ import 'package:storeapp/database/userinfoDatabase.dart';
 import 'package:storeapp/includes/appBar.dart';
 import 'package:storeapp/includes/asideMenu.dart';
 
-
 class printerPage extends StatefulWidget {
   @override
   printerState createState() => printerState();
 }
 
 class printerState extends State {
-
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
-  static MethodChannel platform =  MethodChannel("com.thiqacartlive.live/text");
+  static MethodChannel platform = MethodChannel("com.thiqacartlive.live/text");
   var _device;
   int index;
   var printerAddress;
   var catchErrorDisplay = "taha";
 
-  getPrinterName () async {
+  getPrinterName() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    platform =  MethodChannel(packageInfo.packageName +"/text");
+    platform = MethodChannel(packageInfo.packageName + "/text");
     userinfoDatabase userInfo = new userinfoDatabase();
     var printerName = await userInfo.getPrinterName();
 
@@ -44,15 +41,16 @@ class printerState extends State {
   void initState() {
     super.initState();
     getPrinterName();
-    WidgetsBinding.instance.addPostFrameCallback((_) => { getTheDataVar=  getBlueToothDevices()});
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => {getTheDataVar = getBlueToothDevices()});
 
-   // getTheDataVar = getBlueToothDevices();
+    // getTheDataVar = getBlueToothDevices();
 
-   // getTest();
+    // getTest();
   }
 
   String test = "";
-  getTest () async {
+  getTest() async {
     var getText = await FirebaseFirestore.instance
         .collection('shippingCompanies')
         .doc("UQwLAHTqa0Gz7UNqQ8Yk")
@@ -74,10 +72,11 @@ class printerState extends State {
     }
   }
 
-  connectToPrinter () async {
+  connectToPrinter() async {
     String value;
     try {
-      value = await platform.invokeMethod('connectToPrinter',{"printerAddress": printerAddress});
+      value = await platform
+          .invokeMethod('connectToPrinter', {"printerAddress": printerAddress});
 
       if (value.toString() == "connect") {
         userinfoDatabase userInfo = new userinfoDatabase();
@@ -89,7 +88,6 @@ class printerState extends State {
           duration: Duration(seconds: 2),
         ));
       }
-
     } on PlatformException catch (e) {
       setState(() {
         catchErrorDisplay = e.message.toString();
@@ -100,12 +98,14 @@ class printerState extends State {
   Print() async {
     String value;
     try {
-      value = await platform.invokeMethod('print', {"companyImage": "getProducts[index]['product_image']",
+      value = await platform.invokeMethod('print', {
+        "companyImage": "getProducts[index]['product_image']",
         "productName": "getProducts[index]['product_name']",
         "productNumber": "buyTheCards['saveCradsNumbers'][0]",
         "productSerial": "buyTheCards['saveCradsSerial'][0]",
         "product_expiryDate": "getProducts[index]['product_expiryDate']",
-        "product_shippingMethod": "shippingMethod",});
+        "product_shippingMethod": "shippingMethod",
+      });
       /*
       *  {
         "companyImageUrl": "",
@@ -127,36 +127,40 @@ class printerState extends State {
   Future getTheDataVar;
   List blueToothDevices = [];
   List blueToothDevicesAddress = [];
-  getBlueToothDevices () async {
+  getBlueToothDevices() async {
     blueToothDevices = [];
     var data;
 
     try {
+      print('getting blu');
       data = await platform.invokeMethod('getBlueToothDevices');
-
+      print('got the device');
       if (data.toString() == "empty") {
+        print('got the device1');
+
         //blueToothDevices = [];
       } else {
+        var taha = [];
+        print('got the device2');
 
-          var taha = [];
-
-          for (int i = 0; i < data.length; i = i + 1) {
-            blueToothDevices.add(data[i].toString().split("--")[0]);
-            blueToothDevicesAddress.add(data[i].toString().split("--")[1]);
-          }
-          setState(() {
-            blueToothDevices = blueToothDevices;
-            blueToothDevicesAddress = blueToothDevicesAddress;
-          });
-
+        for (int i = 0; i < data.length; i = i + 1) {
+          blueToothDevices.add(data[i].toString().split("--")[0]);
+          blueToothDevicesAddress.add(data[i].toString().split("--")[1]);
+        }
+        setState(() {
+          blueToothDevices = blueToothDevices;
+          blueToothDevicesAddress = blueToothDevicesAddress;
+        });
       }
-
-
-
     } on PlatformException catch (e) {
       setState(() {
         catchErrorDisplay = e.message.toString();
       });
+    } catch (e) {
+      print("error getting blutooth device $e");
+      if (e.toString().contains('MissingPluginException')) {
+        getBlueToothDevices();
+      }
     }
 
     if (data.toString() == "empty") {
@@ -165,8 +169,6 @@ class printerState extends State {
 
     return blueToothDevices;
   }
-
-
 
   var catchingError = "taha";
 
@@ -180,80 +182,77 @@ class printerState extends State {
         child: MenuBar(),
       ),
       body: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              Container(
-                padding: EdgeInsets.fromLTRB(20, 5, 20, 10),
-                child: Column(
-                  children: <Widget>[
-                    FutureBuilder(
-                      future: getTheDataVar,
-                      builder: (BuildContext context, AsyncSnapshot snapshot) {
-                        if (snapshot.hasData == false) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 5, top: 50),
-                            child: Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        } else {
-                          return Container(
-                            child: Column(
-                              children: blueToothDevices.map((d) {
-                                return ListTile(
-                                  title: Text(d),
-                                  subtitle: Text(d),
-                                  onTap: () async {
-                                    setState(() {
-                                      _device = d;
-                                      index = blueToothDevices.indexOf(d);
-                                      printerAddress = blueToothDevicesAddress[blueToothDevices.indexOf(d)];
-                                    });
-                                  },
-                                  trailing: _device!=null && _device == d?Icon(
-                                    Icons.check,
-                                    color: Colors.green,
-                                  ):null,
-                                );
-                              }).toList(),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-
-
-                    Row(
-                      children: [
-                        OutlinedButton(
-                          child: Text('Connect'),
-                          onPressed: () {
-                            connectToPrinter();
-                          },
-                        ),
-
-                        SizedBox(
-                          width: 30,
-                        ),
-
-                        OutlinedButton(
-                          child: Text('Print'),
-                          onPressed: () {
-                            Print();
-                          },
-                        ),
-                      ],
-                    ),
-
-                    Container(
-                      child: Text(catchErrorDisplay.toString()),
-                    )
-
-                  ],
-                ),
-              )
-            ],
-          ),
+        child: Column(
+          children: <Widget>[
+            Container(
+              padding: EdgeInsets.fromLTRB(20, 5, 20, 10),
+              child: Column(
+                children: <Widget>[
+                  FutureBuilder(
+                    future: getTheDataVar,
+                    builder: (BuildContext context, AsyncSnapshot snapshot) {
+                      if (snapshot.hasData == false) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 5, top: 50),
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      } else {
+                        return Container(
+                          child: Column(
+                            children: blueToothDevices.map((d) {
+                              return ListTile(
+                                title: Text(d),
+                                subtitle: Text(d),
+                                onTap: () async {
+                                  setState(() {
+                                    _device = d;
+                                    index = blueToothDevices.indexOf(d);
+                                    printerAddress = blueToothDevicesAddress[
+                                        blueToothDevices.indexOf(d)];
+                                  });
+                                },
+                                trailing: _device != null && _device == d
+                                    ? Icon(
+                                        Icons.check,
+                                        color: Colors.green,
+                                      )
+                                    : null,
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  Row(
+                    children: [
+                      OutlinedButton(
+                        child: Text('Connect'),
+                        onPressed: () {
+                          connectToPrinter();
+                        },
+                      ),
+                      SizedBox(
+                        width: 30,
+                      ),
+                      OutlinedButton(
+                        child: Text('Print'),
+                        onPressed: () {
+                          Print();
+                        },
+                      ),
+                    ],
+                  ),
+                  Container(
+                    child: Text(catchErrorDisplay.toString()),
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
